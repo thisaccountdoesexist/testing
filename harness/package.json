@@ -1,0 +1,18 @@
+{
+  "name": "model-harness",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Test any OpenAI-compatible or Anthropic-format model API with Claude Code's system prompts and tools, from a local web UI or the command line.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "fetch-prompts": "node scripts/fetch-prompts.mjs",
+    "start": "node src/server.mjs",
+    "cli": "node src/cli.mjs",
+    "mock": "node test/mock-upstream.mjs 8788",
+    "test": "node --test test/harness.test.mjs"
+  },
+  "license": "MIT"
+}

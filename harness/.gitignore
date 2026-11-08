@@ -1,0 +1,5 @@
+.env
+vendor/
+workspace/
+runs/
+node_modules/

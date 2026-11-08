@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="harness-token" content="__HARNESS_TOKEN__">
+<title>Model Harness</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-up" viewBox="0 0 16 16"><path d="M4 10l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-down" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="M4.5 4.5l7 7m0-7l-7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 16 16"><path d="M13 9.5A5.5 5.5 0 016.5 3a5.5 5.5 0 106.5 6.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></symbol>
+</svg>
+
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Model Harness</div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" class="tab" data-tab="chat" aria-selected="true">Chat</button>
+    <button role="tab" class="tab" data-tab="prompt" aria-selected="false">System prompt</button>
+    <button role="tab" class="tab" data-tab="compare" aria-selected="false">Compare</button>
+  </nav>
+  <div class="topmeta">
+    <span id="libStatus" class="mono dim"></span>
+    <button id="themeBtn" class="icon-btn" title="Toggle theme" aria-label="Toggle theme"><svg width="16" height="16"><use href="#i-moon"/></svg></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="rail">
+    <section class="group">
+      <h2>Connection</h2>
+      <label>Base URL<input id="baseUrl" spellcheck="false" placeholder="https://apinex.bond/v1"></label>
+      <div class="row2">
+        <label>Format
+          <select id="format"><option value="openai">OpenAI-compatible</option><option value="anthropic">Anthropic Messages</option></select>
+        </label>
+        <label>Auth header
+          <select id="authHeader"><option value="auto">auto</option><option value="bearer">Bearer</option><option value="x-api-key">x-api-key</option><option value="both">both</option></select>
+        </label>
+      </div>
+      <label>API key<input id="apiKey" type="password" autocomplete="off" spellcheck="false"></label>
+      <label class="check"><input id="rememberKey" type="checkbox"> Remember key in this browser</label>
+      <div class="row-btns"><button id="loadModels" class="btn">Load models</button><span id="modelsStatus" class="dim small"></span></div>
+    </section>
+
+    <section class="group">
+      <h2>Model</h2>
+      <input id="model" list="modelList" spellcheck="false" placeholder="model id">
+      <datalist id="modelList"></datalist>
+    </section>
+
+    <section class="group">
+      <h2>Parameters</h2>
+      <div class="row2">
+        <label>Temperature<input id="temperature" type="number" step="0.1" min="0" max="2" placeholder="default"></label>
+        <label>Max tokens<input id="maxTokens" type="number" min="1" placeholder="default"></label>
+      </div>
+      <div class="row2">
+        <label>Max turns<input id="maxTurns" type="number" min="1" max="200"></label>
+        <label class="check pad-top"><input id="stream" type="checkbox"> Stream</label>
+      </div>
+      <label>Tool approval<select id="approvalMode"></select></label>
+    </section>
+
+    <section class="group">
+      <h2>Saved prompts</h2>
+      <ul id="savedPrompts" class="saved"></ul>
+      <p class="dim small" id="savedEmpty">Save prompts from the chat box to reuse them.</p>
+    </section>
+  </aside>
+
+  <main class="main">
+    <!-- Chat -->
+    <section class="panel" id="panel-chat" role="tabpanel">
+      <div class="panel-head">
+        <div class="head-info">
+          <span class="dot" id="runDot"></span>
+          <span id="chatModel" class="mono"></span>
+          <span class="dim small" id="chatPreset"></span>
+        </div>
+        <div class="row-btns">
+          <span class="dim small mono" id="chatTotals"></span>
+          <button id="exportBtn" class="btn ghost">Export JSON</button>
+          <button id="newChat" class="btn ghost">New chat</button>
+        </div>
+      </div>
+      <div id="todos" class="todos" hidden></div>
+      <div id="transcript" class="transcript" aria-live="polite">
+        <div class="empty" id="chatEmpty">
+          <p class="empty-title">Send a prompt to start.</p>
+          <p class="dim">The system prompt and tools come from the <b>System prompt</b> tab. Tool calls run inside <span class="mono" id="workspacePath"></span>.</p>
+        </div>
+      </div>
+      <form id="composer" class="composer">
+        <textarea id="input" rows="3" placeholder="Your prompt…  (Ctrl/Cmd+Enter to send)"></textarea>
+        <div class="composer-bar">
+          <div class="row-btns">
+            <button type="button" id="savePrompt" class="btn ghost small">Save prompt</button>
+            <span id="savedPath" class="dim small mono"></span>
+          </div>
+          <div class="row-btns">
+            <button type="button" id="stopBtn" class="btn danger" hidden>Stop</button>
+            <button type="submit" id="sendBtn" class="btn primary">Send</button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- System prompt -->
+    <section class="panel" id="panel-prompt" role="tabpanel" hidden>
+      <div class="prompt-grid">
+        <div class="col">
+          <div class="group">
+            <div class="row2">
+              <label>Preset<select id="preset"></select></label>
+              <label>Tool descriptions
+                <select id="toolStyle"><option value="compact">compact (newer builds)</option><option value="classic">classic</option></select>
+              </label>
+            </div>
+            <p id="presetDesc" class="dim small"></p>
+            <label>Identity line<input id="identity" spellcheck="false"></label>
+            <div class="tools-check" id="toolChecks"></div>
+          </div>
+
+          <div class="group">
+            <div class="group-head"><h2>Sections</h2>
+              <div class="row-btns">
+                <button id="addText" class="btn ghost small">+ Text</button>
+                <button id="addEnv" class="btn ghost small">+ Environment</button>
+                <button id="resetPreset" class="btn ghost small">Reset to preset</button>
+              </div>
+            </div>
+            <ol id="sections" class="sections"></ol>
+          </div>
+
+          <div class="group">
+            <div class="group-head"><h2>Fragment library</h2><span class="dim small mono" id="libCount"></span></div>
+            <div class="row2">
+              <input id="libSearch" type="search" placeholder="Search names and descriptions">
+              <select id="libCategory"><option value="">All categories</option></select>
+            </div>
+            <ul id="libList" class="lib"></ul>
+            <div id="libPreview" class="lib-preview" hidden>
+              <div class="group-head"><b id="libPreviewName"></b><button id="libAdd" class="btn small primary">Add to prompt</button></div>
+              <p id="libPreviewDesc" class="dim small"></p>
+              <pre id="libPreviewBody" class="pre"></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="group" id="varsGroup">
+            <div class="group-head"><h2>Variables</h2><button id="addVar" class="btn ghost small">+ Override</button></div>
+            <p class="dim small">Placeholders like <span class="mono">${READ_TOOL_NAME}</span> are filled from harness defaults. Unresolved ones render empty unless you set them here.</p>
+            <div id="vars" class="vars"></div>
+          </div>
+          <div class="group grow">
+            <div class="group-head">
+              <h2>Assembled system prompt</h2>
+              <span class="mono dim small" id="promptStats"></span>
+            </div>
+            <label class="check"><input id="manualEdit" type="checkbox"> Edit text directly (freezes the sections above)</label>
+            <textarea id="systemPreview" class="pre-area" spellcheck="false" readonly></textarea>
+            <details class="tools-preview"><summary>Tool definitions sent to the model</summary><pre id="toolsPreview" class="pre"></pre></details>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Compare -->
+    <section class="panel" id="panel-compare" role="tabpanel" hidden>
+      <div class="group compare-setup">
+        <div class="chips" id="cmpChips"></div>
+        <div class="row-btns wrap">
+          <input id="cmpAdd" list="modelList" placeholder="Add model id and press Enter" spellcheck="false">
+          <label class="check"><input id="cmpSystem" type="checkbox" checked> Use composed system prompt</label>
+          <label class="check"><input id="cmpTools" type="checkbox"> Offer tools (calls shown, not run)</label>
+        </div>
+        <textarea id="cmpPrompt" rows="3" placeholder="Prompt to send to every selected model"></textarea>
+        <div class="row-btns"><button id="cmpRun" class="btn primary">Run comparison</button><span id="cmpStatus" class="dim small mono"></span></div>
+      </div>
+      <div id="cmpResults" class="cmp-grid"></div>
+    </section>
+  </main>
+</div>
+<script src="/app.js" type="module"></script>
+</body>
+</html>

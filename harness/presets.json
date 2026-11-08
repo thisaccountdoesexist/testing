@@ -1,0 +1,205 @@
+{
+  "claude-code-lean": {
+    "label": "Claude Code – main prompt (lean)",
+    "description": "The compact main agent prompt: intro, security policy, harness rules, action safety, environment, context management.",
+    "sections": [
+      {
+        "identity": true
+      },
+      {
+        "file": "system-prompt-harness-instructions"
+      },
+      {
+        "file": "system-prompt-action-safety-and-truthful-reporting"
+      },
+      {
+        "generated": "environment"
+      },
+      {
+        "file": "system-prompt-context-management-lean-rewrite"
+      },
+      {
+        "file": "system-prompt-act-when-ready"
+      }
+    ],
+    "tools": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "TodoWrite"
+    ]
+  },
+  "claude-code-full": {
+    "label": "Claude Code – main prompt (full)",
+    "description": "The longer sectioned variant: doing tasks, executing actions with care, tool usage, tone and style, reporting outcomes.",
+    "sections": [
+      {
+        "identity": true
+      },
+      {
+        "file": "system-prompt-interactive-agent-intro-output-style-conditional"
+      },
+      {
+        "text": "# System"
+      },
+      {
+        "file": "system-prompt-system-section",
+        "bullet": true
+      },
+      {
+        "text": "# Doing tasks"
+      },
+      {
+        "file": "system-prompt-doing-tasks-software-engineering-focus",
+        "bullet": true
+      },
+      {
+        "file": "system-prompt-doing-tasks-ambitious-tasks",
+        "bullet": true
+      },
+      {
+        "file": "system-prompt-exploratory-questions-analyze-before-implementing",
+        "bullet": true
+      },
+      {
+        "file": "system-prompt-prefer-editing-existing-files",
+        "bullet": true
+      },
+      {
+        "file": "system-prompt-doing-tasks-security",
+        "bullet": true
+      },
+      {
+        "file": "system-prompt-doing-tasks-no-unnecessary-additions",
+        "bullet": true
+      },
+      {
+        "file": "system-prompt-doing-tasks-no-unnecessary-error-handling",
+        "bullet": true
+      },
+      {
+        "file": "system-prompt-doing-tasks-no-compatibility-hacks",
+        "bullet": true
+      },
+      {
+        "file": "system-prompt-comment-why-only-guidance",
+        "bullet": true
+      },
+      {
+        "file": "system-prompt-executing-actions-with-care"
+      },
+      {
+        "text": "# Using your tools"
+      },
+      {
+        "file": "system-prompt-tool-usage-task-management",
+        "bullet": true
+      },
+      {
+        "file": "system-prompt-parallel-tool-call-note-part-of-tool-usage-policy",
+        "bullet": true
+      },
+      {
+        "text": "# Tone and style"
+      },
+      {
+        "file": "system-prompt-emoji-avoidance",
+        "bullet": true
+      },
+      {
+        "file": "system-prompt-tone-and-style-code-references",
+        "bullet": true
+      },
+      {
+        "file": "system-prompt-communication-style"
+      },
+      {
+        "file": "system-prompt-reporting-outcomes"
+      },
+      {
+        "generated": "environment"
+      },
+      {
+        "file": "system-prompt-context-management-lean-rewrite"
+      }
+    ],
+    "tools": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "TodoWrite"
+    ]
+  },
+  "explore-agent": {
+    "label": "Explore subagent",
+    "description": "Read-only codebase search agent.",
+    "sections": [
+      {
+        "file": "agent-prompt-explore",
+        "vars": {
+          "GLOB_TOOL_NAME": "- Use Glob for broad file pattern matching",
+          "GREP_TOOL_NAME": "- Use Grep for searching file contents with regex"
+        }
+      },
+      {
+        "generated": "environment"
+      }
+    ],
+    "tools": [
+      "Bash",
+      "Read",
+      "Glob",
+      "Grep"
+    ]
+  },
+  "plan-agent": {
+    "label": "Plan subagent",
+    "description": "Software architect agent that designs implementation plans.",
+    "sections": [
+      {
+        "file": "agent-prompt-plan-mode-enhanced"
+      },
+      {
+        "generated": "environment"
+      }
+    ],
+    "tools": [
+      "Bash",
+      "Read",
+      "Glob",
+      "Grep"
+    ]
+  },
+  "general-purpose-agent": {
+    "label": "General-purpose subagent",
+    "description": "Catch-all subagent used for delegated multi-step tasks.",
+    "sections": [
+      {
+        "file": "agent-prompt-general-purpose"
+      },
+      {
+        "generated": "environment"
+      }
+    ],
+    "tools": [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ]
+  },
+  "none": {
+    "label": "No system prompt",
+    "description": "Raw model: no system prompt, no tools.",
+    "sections": [],
+    "tools": []
+  }
+}
