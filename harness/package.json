@@ -12,7 +12,8 @@
     "start": "node src/server.mjs",
     "cli": "node src/cli.mjs",
     "mock": "node test/mock-upstream.mjs 8788",
-    "test": "node --test test/harness.test.mjs"
+    "test": "node --test test/harness.test.mjs",
+    "probe": "node scripts/probe-hidden-prompt.mjs"
   },
   "license": "MIT"
 }

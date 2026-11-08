@@ -93,6 +93,22 @@ node src/cli.mjs -a never --format anthropic --tool-style classic "Find every TO
 
 `node src/cli.mjs --help` lists all options. Approval prompts appear inline (`y` to allow).
 
+## Checking what a provider adds to your prompts
+
+Resellers and gateways sometimes add their own hidden instructions to every request. That changes how a model behaves, and it changes what you are actually testing. To check a model:
+
+```bash
+npm run probe -- -m gemini-4-argon
+```
+
+The script:
+
+1. **Measures** the added text. It compares the input tokens billed for a 1-token message, a longer one, and one with a system prompt. Official APIs add only a few tokens of framing, so a large fixed remainder means text was added.
+2. **Asks** the model about it in several ways, sampling each probe a few times. Models told to keep instructions secret answer inconsistently, so the leaks show up across samples. When a fragment leaks, it asks the model to continue quoting from there. You can also pass a fragment yourself with `--seed "..."`.
+3. **Checks** the best verbatim extraction against the measured size, and saves everything to `runs/`.
+
+Treat what comes back as evidence, not proof: models can invent instructions. Trust a rule when it appears in several independent samples and matches the model's behaviour, for example a scripted identity answer it actually gives.
+
 ## What is extracted vs. written by the harness
 
 From the prompt repo, rendered as-is: every fragment in `presets.json`, every tool description, and the Bash `description` parameter text.
@@ -157,5 +173,6 @@ harness/
   src/cli.mjs             command-line runner
   public/                 the web UI (no build step)
   scripts/fetch-prompts.mjs
+  scripts/probe-hidden-prompt.mjs   measure and extract text a provider adds to requests
   test/                   mock provider and tests
 ```
