@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { spawn } from 'node:child_process';
 import { loadConfig } from './config.mjs';
 import { PromptLibrary, DEFAULT_PROMPTS_REPO, DEFAULT_IDENTITY, HARNESS_DIR, assemble, loadPresets } from './prompts.mjs';
 import { createToolContext, TOOL_NAMES } from './tools.mjs';
@@ -146,11 +147,19 @@ async function handleCompare(req, res, body) {
   res.end();
 }
 
+// Blocks DNS-rebinding when bound to loopback. HARNESS_ALLOWED_HOSTS adds names (or * for any).
+const EXTRA_HOSTS = String(process.env.HARNESS_ALLOWED_HOSTS || '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean);
 function hostAllowed(req) {
-  if (!['127.0.0.1', 'localhost', '::1'].includes(config.host)) return true;
-  const host = String(req.headers.host || '').replace(/:\d+$/, '').replace(/^\[|\]$/g, '');
-  return ['127.0.0.1', 'localhost', '::1'].includes(host);
+  if (!['127.0.0.1', 'localhost', '::1'].includes(config.host) || EXTRA_HOSTS.includes('*')) return true;
+  const host = String(req.headers.host || '').toLowerCase().replace(/:\d+$/, '').replace(/^\[|\]$/g, '');
+  const ok = ['127.0.0.1', 'localhost', '::1', ...EXTRA_HOSTS].includes(host);
+  if (!ok && !rejectedHosts.has(host)) {
+    rejectedHosts.add(host);
+    console.log(`  Refused a request for host "${host}". To allow it, start with HARNESS_ALLOWED_HOSTS=${host}`);
+  }
+  return ok;
 }
+const rejectedHosts = new Set();
 
 async function route(req, res) {
   const url = new URL(req.url, 'http://localhost');
@@ -226,11 +235,42 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(config.port, config.host, () => {
-  const where = `http://${config.host === '::1' ? '[::1]' : config.host}:${config.port}`;
-  console.log(`Model harness running at ${where}`);
-  console.log(`  API: ${config.baseUrl} (${config.format}) · default model: ${config.model} · key: ${config.apiKey ? 'set' : 'not set (enter it in the UI)'}`);
-  console.log(`  Workspace for tool calls: ${config.workspace}`);
-  if (!library.available) console.log('  Prompt library not found. Run: npm run fetch-prompts');
-  else console.log(`  Prompt library: ${library.items.size} fragments (Claude Code v${library.version ?? '?'})`);
-});
+function openBrowser(url) {
+  if (process.env.HARNESS_OPEN === '0' || !process.stdout.isTTY) return;
+  const [cmd, args] = process.platform === 'darwin' ? ['open', [url]] : process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]] : ['xdg-open', [url]];
+  try {
+    const child = spawn(cmd, args, { stdio: 'ignore', detached: true });
+    child.on('error', () => {});
+    child.unref();
+  } catch { /* no browser available */ }
+}
+
+function listen(port, attemptsLeft) {
+  const onError = (e) => {
+    server.off('listening', onListening);
+    if (e.code === 'EADDRINUSE' && attemptsLeft > 0) {
+      console.log(`Port ${port} is already in use, trying ${port + 1}...`);
+      listen(port + 1, attemptsLeft - 1);
+    } else {
+      console.error(`Could not start the harness server: ${e.message}`);
+      process.exit(1);
+    }
+  };
+  const onListening = () => {
+    server.off('error', onError);
+    const shown = ['0.0.0.0', '::'].includes(config.host) ? 'localhost' : config.host === '::1' ? '[::1]' : config.host;
+    const url = `http://${shown}:${server.address().port}`;
+    console.log(`Model harness running. Open this in your browser:  ${url}`);
+    console.log(`  API: ${config.baseUrl} (${config.format}) · default model: ${config.model} · key: ${config.apiKey ? 'set' : 'not set (enter it in the UI)'}`);
+    console.log(`  Workspace for tool calls: ${config.workspace}`);
+    if (!library.available) console.log('  Prompt library not found. Run: npm run fetch-prompts');
+    else console.log(`  Prompt library: ${library.items.size} fragments (Claude Code v${library.version ?? '?'})`);
+    console.log('  Press Ctrl+C to stop.');
+    openBrowser(url);
+  };
+  server.once('error', onError);
+  server.once('listening', onListening);
+  server.listen(port, config.host);
+}
+
+listen(config.port, process.env.HARNESS_PORT ? 0 : 10);

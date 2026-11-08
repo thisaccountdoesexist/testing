@@ -26,20 +26,19 @@ Edit `.env` and set `HARNESS_API_KEY` (and `HARNESS_BASE_URL` / `HARNESS_API_FOR
 npm start
 ```
 
-Open http://127.0.0.1:8787. Click **Load models** first: it checks your key and base URL, and fills the model list with the provider's exact model ids.
+Open the address it prints. On a desktop it opens in your browser automatically. If port 8787 is busy it moves to the next free port, so use the address it prints. The page only works through the server: opening `public/index.html` straight from the folder shows a notice instead. Click **Load models** first: it checks your key and fills the model list with the provider's exact model ids.
 
 You can also leave `.env` empty and paste the key into the UI. It is then sent only to the local harness server, and stored in your browser only if you tick "Remember key".
 
-### Pointing it at apinex.bond / gemini-4-argon
+### apinex.bond / gemini-4-argon
 
-`.env.example` defaults to `https://apinex.bond/v1`, OpenAI-compatible format, and model `gemini-4-argon`. These are guesses: the provider's docs weren't reachable when this was written. Check the provider's API docs for:
+The defaults in `.env.example` are confirmed to work for apinex.bond: base URL `https://apinex.bond/v1`, OpenAI-compatible format, Bearer auth, and model id `gemini-4-argon` (one of 42 models it lists). Other providers may differ:
 
 - **Base URL**: the harness calls `<base>/chat/completions` (openai) or `<base>/messages` (anthropic), and `<base>/models`.
 - **Format**: switch to `anthropic` if the provider exposes the Messages API instead.
-- **Auth header**: `auto` sends `Authorization: Bearer <key>` for openai and `x-api-key` for anthropic. Change it if the docs say otherwise.
-- **Model id**: it may be namespaced (e.g. `google/gemini-4-argon`). Load models shows the real ids.
+- **Auth header**: `auto` sends `Authorization: Bearer <key>` for openai and `x-api-key` for anthropic.
 
-Errors from the provider (401, 404, 429, …) are shown in full in the chat, with your key redacted.
+Errors from the provider (401, 402 out of balance, 429, …) are shown in full in the chat, with your key redacted.
 
 ## The UI
 
@@ -134,13 +133,15 @@ npm test
 
 The test suite covers the template engine, assembly of every preset against the real prompt repo, tool confinement, both API formats with and without streaming, approvals, and error handling.
 
-## Behind a proxy
+## Behind a proxy, or on a remote machine
 
 Node's `fetch` ignores `HTTPS_PROXY` unless you opt in:
 
 ```bash
 NODE_USE_ENV_PROXY=1 npm start
 ```
+
+The server only accepts requests addressed to `127.0.0.1`/`localhost`, which guards against DNS rebinding. If you reach it through a forwarded port under another hostname, it logs the refused name; allow it with `HARNESS_ALLOWED_HOSTS=that.host` (comma-separated). `HARNESS_OPEN=0` stops it opening a browser.
 
 ## Layout
 
